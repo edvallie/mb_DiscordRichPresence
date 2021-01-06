@@ -21,17 +21,17 @@ namespace MusicBeePlugin
             about.PluginInfoVersion = PluginInfoVersion;
             about.Name = "Discord Rich Presence";
             about.Description = "Sets currently playing song as Discord Rich Presence";
-            about.Author = "Harmon758 + Kuunikal";
+            about.Author = "Harmon758 + Kuunikal + lampin";
             about.TargetApplication = "";   // current only applies to artwork, lyrics or instant messenger name that appears in the provider drop down selector or target Instant Messenger
             about.Type = PluginType.General;
             about.VersionMajor = 1;  // your plugin version
             about.VersionMinor = 0;
-            about.Revision = 05; // this how you do it?
+            about.Revision = 06; // this how you do it?
             about.MinInterfaceVersion = MinInterfaceVersion;
             about.MinApiRevision = MinApiRevision;
             about.ReceiveNotifications = (ReceiveNotificationFlags.PlayerEvents | ReceiveNotificationFlags.TagEvents);
             about.ConfigurationPanelHeight = 0;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
-
+            
             InitialiseDiscord();
             
             return about;
@@ -43,13 +43,37 @@ namespace MusicBeePlugin
             handlers.readyCallback = HandleReadyCallback;
             handlers.errorCallback = HandleErrorCallback;
             handlers.disconnectedCallback = HandleDisconnectedCallback;
-			// Kuunikal's dev app client ID
-            DiscordRPC.Initialize("432174690857910272", ref handlers, true, null);
+			// lampin's dev app client ID
+            DiscordRPC.Initialize("794444362636328960", ref handlers, true, null);
         }
 
         private void HandleReadyCallback() { }
         private void HandleErrorCallback(int errorCode, string message) { }
         private void HandleDisconnectedCallback(int errorCode, string message) { }
+
+        /*
+         * Checks a local text file for the album name to see if it's one that we're storing on discord's servers
+         *  If not, use the default photo
+         */
+        private string checkAlbumList(string album)
+        {
+            string[] artworkAlbums = System.IO.File.ReadAllLines("C:\\Users\\dalton\\Desktop\\musicbee covers\\albums.txt");
+            bool defaultImage = true;
+            foreach (string line in artworkAlbums)
+            {
+                if(line == album)
+                {
+                    defaultImage = false;
+                    break;
+                }
+            }
+
+            if(defaultImage == true)
+            {
+                album = "default";
+            }
+            return album;
+        }
 
         private void UpdatePresence(string artist, string track, string album, string duration, Boolean playing)
         {
@@ -67,7 +91,7 @@ namespace MusicBeePlugin
 			// Hovering over the image presents the album name
 			presence.largeImageText = album;
 
-			/* Next block  is fetching the album image from Discord's 
+            /* Next block  is fetching the album image from Discord's 
 			   server. They don't allow spaces in their file names, so 
 			   we need to convert them into underscores. */
 
@@ -76,13 +100,15 @@ namespace MusicBeePlugin
 			// Search album string for spaces
 			for (int i = 0; i < album.Length; i++)
 			{
-				// If the current character is a space, turn it into an underscore
-				if (album[i] == ' ') albumArray[i] = '_';
-				// Otherwise, just continue on
-				else albumArray[i] = album[i];
+                // If the current character is a space, turn it into an underscore
+                // If the current character is an apostrophe, turn it into an underscore (discord doesnt support them and does this too)
+                if (album[i] == ' ' || album[i] == '\'') albumArray[i] = '_';
+                // Otherwise, just continue on
+                else albumArray[i] = album[i];
 			}
 			// Create a string from the array, in lowercase
 			string newAlbum = new String(albumArray).ToLower();
+            newAlbum = checkAlbumList(newAlbum);
 			// Set the album art to the manipulated album string.
 			presence.largeImageKey = newAlbum;
 
